@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -92,6 +94,138 @@ func (n *Node) Dump(indent int) {
 	}
 }
 
+func (n *Node) GetString() string {
+	v, _ := n.GetStringE()
+	return v
+}
+
+func (n *Node) GetStringE() (string, error) {
+	if len(n.Children) != 0 {
+		return "", ErrNotAScalar
+	}
+
+	return n.Value, nil
+}
+
+func (n *Node) GetInt() int {
+	v, _ := n.GetIntE()
+	return v
+}
+
+func (n *Node) GetIntE() (int, error) {
+	v, err := n.GetInt64E()
+	return int(v), err
+}
+
+func (n *Node) GetInt64() int64 {
+	v, _ := n.GetInt64E()
+	return v
+}
+
+func (n *Node) GetInt64E() (int64, error) {
+	v, err := n.GetStringE()
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseInt(v, 10, 64)
+}
+
+func (n *Node) GetUint() uint {
+	v, _ := n.GetUintE()
+	return v
+}
+
+func (n *Node) GetUintE() (uint, error) {
+	v, err := n.GetUint64E()
+	return uint(v), err
+}
+
+func (n *Node) GetUint64() uint64 {
+	v, _ := n.GetUint64E()
+	return v
+}
+
+func (n *Node) GetUint64E() (uint64, error) {
+	v, err := n.GetStringE()
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseUint(v, 10, 64)
+}
+
+func (n *Node) GetFloat32() float32 {
+	v, _ := n.GetFloat32E()
+	return v
+}
+
+func (n *Node) GetFloat32E() (float32, error) {
+	v, err := n.GetStringE()
+	if err != nil {
+		return 0, err
+	}
+
+	f, err := strconv.ParseFloat(v, 32)
+	return float32(f), err
+}
+
+func (n *Node) GetFloat64() float64 {
+	v, _ := n.GetFloat64E()
+	return v
+}
+
+func (n *Node) GetFloat64E() (float64, error) {
+	v, err := n.GetStringE()
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseFloat(v, 64)
+}
+
+func (n *Node) GetComplex128() complex128 {
+	v, _ := n.GetComplex128E()
+	return v
+}
+
+func (n *Node) GetComplex128E() (complex128, error) {
+	v, err := n.GetStringE()
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseComplex(v, 128)
+}
+
+func (n *Node) GetBool() bool {
+	v, _ := n.GetBoolE()
+	return v
+}
+
+func (n *Node) GetBoolE() (bool, error) {
+	v, err := n.GetStringE()
+	if err != nil {
+		return false, err
+	}
+
+	return strconv.ParseBool(v)
+}
+
+func (n *Node) GetDuration() time.Duration {
+	d, _ := n.GetDurationE()
+	return d
+}
+
+func (n *Node) GetDurationE() (time.Duration, error) {
+	v, err := n.GetStringE()
+	if err != nil {
+		return 0, err
+	}
+
+	return time.ParseDuration(v)
+}
+
 func ConvertToNode(m map[string]interface{}) (*Node, error) {
 	n := &Node{
 		Children: make(map[Key]*Node),
@@ -132,6 +266,12 @@ func ConvertToNode(m map[string]interface{}) (*Node, error) {
 func createNodeFromValue(val interface{}) (*Node, error) {
 	t := reflect.TypeOf(val)
 	switch t.Kind() {
+	case reflect.Slice:
+		s, ok := val.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("%w: nested slice invalid: %v", ErrUnsupportedValue, val)
+		}
+		return createNodeFromSlice(s)
 	case reflect.Map:
 		nested, ok := val.(map[string]interface{})
 		if !ok {
@@ -156,6 +296,22 @@ func createNodeFromValue(val interface{}) (*Node, error) {
 		reflect.String:
 		return &Node{Value: fmt.Sprint(val)}, nil
 	default:
-		return nil, fmt.Errorf("%w: unsupported value type: %t", ErrUnsupportedValue, val)
+		return nil, fmt.Errorf("%w: unsupported value type: %T", ErrUnsupportedValue, val)
 	}
+}
+
+func createNodeFromSlice(val []interface{}) (*Node, error) {
+	r := &Node{
+		Children: make(map[Key]*Node),
+	}
+
+	for idx, v := range val {
+		n, err := createNodeFromValue(v)
+		if err != nil {
+			return nil, err
+		}
+		r.Children[Key(strconv.Itoa(idx))] = n
+	}
+
+	return r, nil
 }

@@ -20,6 +20,18 @@ func TestStatic(t *testing.T) {
 			"user":     "test",
 			"password": "secret",
 		},
+		"backends": []interface{}{
+			map[string]interface{}{
+				"host": "alpha",
+				"port": 8080,
+				"tags": []interface{}{"a", "1"},
+			},
+			map[string]interface{}{
+				"host": "beta",
+				"port": 8081,
+				"tags": []interface{}{"b", "2"},
+			},
+		},
 	}))
 }
 

@@ -1,6 +1,7 @@
 package appconf
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -55,6 +56,7 @@ func TestConvertToNode(t *testing.T) {
 			"eggs": "ham",
 		},
 		"spam.salad": "none",
+		"slice":      []interface{}{"a", "b", "c"},
 	}
 
 	want := &Node{
@@ -67,6 +69,13 @@ func TestConvertToNode(t *testing.T) {
 					"salad": {Value: "none"},
 				},
 			},
+			"slice": {
+				Children: map[Key]*Node{
+					"0": {Value: "a"},
+					"1": {Value: "b"},
+					"2": {Value: "c"},
+				},
+			},
 		},
 	}
 
@@ -75,7 +84,9 @@ func TestConvertToNode(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	fmt.Println("Want")
 	want.Dump(0)
+	fmt.Println("Got")
 	got.Dump(0)
 
 	if diff := deep.Equal(want, got); diff != nil {

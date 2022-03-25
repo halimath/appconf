@@ -9,3 +9,10 @@ db:
   port: 3306
   user: test
   password: "secret"
+backends:
+  - host: alpha
+    port: 8080
+    tags: ["a", "1"]
+  - host: beta
+    port: 8081
+    tags: ["b", "2"]

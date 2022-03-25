@@ -23,6 +23,35 @@ var standardConfig = &Node{
 				Key("password"): {Value: "secret"},
 			},
 		},
+
+		Key("backends"): {
+			Children: map[Key]*Node{
+				"0": {
+					Children: map[Key]*Node{
+						Key("host"): {Value: "alpha"},
+						Key("port"): {Value: "8080"},
+						Key("tags"): {
+							Children: map[Key]*Node{
+								Key("0"): {Value: "a"},
+								Key("1"): {Value: "1"},
+							},
+						},
+					},
+				},
+				"1": {
+					Children: map[Key]*Node{
+						Key("host"): {Value: "beta"},
+						Key("port"): {Value: "8081"},
+						Key("tags"): {
+							Children: map[Key]*Node{
+								Key("0"): {Value: "b"},
+								Key("1"): {Value: "2"},
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 }
 

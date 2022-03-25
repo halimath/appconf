@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,7 +19,7 @@ var (
 	ErrInvalidBindingType = errors.New("invalid binding type")
 )
 
-func (c *AppConfig) Bind(v interface{}) error {
+func bind(n *Node, v interface{}) error {
 	rv := reflect.ValueOf(v)
 
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
@@ -27,73 +28,39 @@ func (c *AppConfig) Bind(v interface{}) error {
 
 	switch reflect.Indirect(rv).Kind() {
 	case reflect.Struct:
-		return c.bindStruct(rv)
+		return bindStruct(n, rv)
 	case reflect.Map:
-		return c.bindMap(rv)
+		mptr, ok := v.(*map[string]interface{})
+		if !ok {
+			return fmt.Errorf("%w: invalid map: %t", ErrInvalidBindingType, v)
+		}
+
+		if *mptr == nil {
+			m := make(map[string]interface{})
+			*mptr = m
+		}
+		return bindMap(n, *mptr)
 	default:
 		return fmt.Errorf("%w: cannot bind to value of type %q", ErrInvalidBindingType, rv.Type())
 	}
 }
 
-func (c *AppConfig) bindStruct(rv reflect.Value) error {
+func bindStruct(n *Node, rv reflect.Value) error {
 	rt := reflect.Indirect(rv).Type()
 
-	n := rt.NumField()
+	numFields := rt.NumField()
 
-	for i := 0; i < n; i++ {
+	for i := 0; i < numFields; i++ {
 		f := rt.Field(i)
 		opts := determineBindOpts(f)
 
 		if opts.ignore {
-			// No matching field tag; skip field
 			continue
 		}
 
-		var v reflect.Value
-
-		if f.Type == reflect.TypeOf(time.Second) {
-			v = reflect.ValueOf(c.GetDuration(opts.key))
-		} else {
-			switch f.Type.Kind() {
-			case reflect.Struct:
-				ptr := reflect.New(f.Type)
-				c.Sub(opts.key).bindStruct(ptr)
-				v = ptr.Elem()
-
-			case reflect.String:
-				v = reflect.ValueOf(c.GetString(opts.key))
-			case reflect.Bool:
-				v = reflect.ValueOf(c.GetBool(opts.key))
-			case reflect.Int:
-				v = reflect.ValueOf(c.GetInt(opts.key))
-			case reflect.Int8:
-				v = reflect.ValueOf(int8(c.GetInt(opts.key)))
-			case reflect.Int16:
-				v = reflect.ValueOf(int16(c.GetInt(opts.key)))
-			case reflect.Int32:
-				v = reflect.ValueOf(int32(c.GetInt64(opts.key)))
-			case reflect.Int64:
-				v = reflect.ValueOf(c.GetInt64(opts.key))
-			case reflect.Uint:
-				v = reflect.ValueOf(c.GetUint(opts.key))
-			case reflect.Uint8:
-				v = reflect.ValueOf(uint8(c.GetUint(opts.key)))
-			case reflect.Uint16:
-				v = reflect.ValueOf(uint16(c.GetUint(opts.key)))
-			case reflect.Uint32:
-				v = reflect.ValueOf(uint32(c.GetUint64(opts.key)))
-			case reflect.Uint64:
-				v = reflect.ValueOf(c.GetUint64(opts.key))
-			case reflect.Complex64:
-				v = reflect.ValueOf(complex64(c.GetComplex128(opts.key)))
-			case reflect.Complex128:
-				v = reflect.ValueOf(c.GetComplex128(opts.key))
-			case reflect.Float32,
-				reflect.Float64:
-				v = reflect.ValueOf(c.GetFloat64(opts.key))
-			default:
-				return fmt.Errorf("%w: unsupported struct field %s: type not supported: %s", ErrInvalidBindingType, f.Name, f.Type)
-			}
+		v, err := resolveReflectValue(n, f.Type, opts)
+		if err != nil {
+			return fmt.Errorf("%w: struct field %s: %s", ErrInvalidBindingType, f.Name, err)
 		}
 
 		rv.Elem().Field(i).Set(v)
@@ -102,19 +69,136 @@ func (c *AppConfig) bindStruct(rv reflect.Value) error {
 	return nil
 }
 
-func (c *AppConfig) bindMap(rv reflect.Value) error {
-	return fmt.Errorf("not implemented")
+func resolveReflectValue(n *Node, t reflect.Type, opts structFieldBindOpts) (reflect.Value, error) {
+	keyPath := ParseKeyPath(opts.key)
+
+	n = n.resolve(keyPath)
+	if n == nil {
+		return reflect.Value{}, fmt.Errorf("%w: %s", ErrNoSuchKey, opts.key)
+	}
+
+	if t == reflect.TypeOf(time.Second) {
+		return reflect.ValueOf(n.GetDuration()), nil
+	}
+
+	switch t.Kind() {
+	case reflect.Struct:
+		ptr := reflect.New(t)
+		if err := bindStruct(n, ptr); err != nil {
+			return reflect.Value{}, err
+		}
+		return ptr.Elem(), nil
+
+	case reflect.Slice:
+		v := reflect.MakeSlice(t, 0, 10)
+		v, err := bindSlice(n, v)
+		if err != nil {
+			return reflect.Value{}, nil
+		}
+		return v, nil
+
+	case reflect.String,
+		reflect.Bool,
+		reflect.Int,
+		reflect.Int8,
+		reflect.Int16,
+		reflect.Int32,
+		reflect.Int64,
+		reflect.Uint,
+		reflect.Uint8,
+		reflect.Uint16,
+		reflect.Uint32,
+		reflect.Uint64,
+		reflect.Complex64,
+		reflect.Complex128,
+		reflect.Float32:
+		s, err := resolveScalar(n, t.Kind())
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(s), nil
+	default:
+		return reflect.Value{}, fmt.Errorf("%w: type not supported: %s", ErrInvalidBindingType, t)
+	}
 }
 
-type (
-	structFieldBindOpts struct {
-		key    string
-		ignore bool
+func resolveScalar(n *Node, rk reflect.Kind) (interface{}, error) {
+	switch rk {
+	case reflect.String:
+		return n.GetString(), nil
+	case reflect.Bool:
+		return n.GetBool(), nil
+	case reflect.Int:
+		return n.GetInt(), nil
+	case reflect.Int8:
+		return int8(n.GetInt()), nil
+	case reflect.Int16:
+		return int16(n.GetInt()), nil
+	case reflect.Int32:
+		return int32(n.GetInt64()), nil
+	case reflect.Int64:
+		return n.GetInt64(), nil
+	case reflect.Uint:
+		return n.GetUint(), nil
+	case reflect.Uint8:
+		return uint8(n.GetUint()), nil
+	case reflect.Uint16:
+		return uint16(n.GetUint()), nil
+	case reflect.Uint32:
+		return uint32(n.GetUint64()), nil
+	case reflect.Uint64:
+		return n.GetUint64(), nil
+	case reflect.Complex64:
+		return complex64(n.GetComplex128()), nil
+	case reflect.Complex128:
+		return n.GetComplex128(), nil
+	case reflect.Float32,
+		reflect.Float64:
+		return n.GetFloat64(), nil
+	default:
+		return nil, fmt.Errorf("%w: unsupported kind: %s", ErrNotAScalar, rk)
 	}
-)
+}
+
+func bindSlice(n *Node, rv reflect.Value) (reflect.Value, error) {
+	for idx := 0; idx < len(n.Children); idx++ {
+		v, err := resolveReflectValue(n, rv.Type().Elem(), structFieldBindOpts{key: strconv.Itoa(idx)})
+		if err != nil {
+			if errors.Is(err, ErrNoSuchKey) {
+				return rv, nil
+			}
+			return rv, err
+		}
+		rv = reflect.Append(rv, v)
+	}
+
+	return rv, nil
+}
+
+func bindMap(n *Node, m map[string]interface{}) error {
+	if len(n.Children) == 0 {
+		return nil
+	}
+
+	for k, c := range n.Children {
+		if len(c.Children) == 0 {
+			m[string(k)] = c.Value
+		} else {
+			cm := make(map[string]interface{})
+			bindMap(c, cm)
+			m[string(k)] = cm
+		}
+	}
+
+	return nil
+}
+
+type structFieldBindOpts struct {
+	key    string
+	ignore bool
+}
 
 func determineBindOpts(f reflect.StructField) structFieldBindOpts {
-
 	opts := structFieldBindOpts{
 		key: strings.ToLower(f.Name),
 	}
