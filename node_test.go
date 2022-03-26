@@ -1,7 +1,6 @@
 package appconf
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -60,19 +59,19 @@ func TestConvertToNode(t *testing.T) {
 
 	want := &Node{
 		Children: map[Key]*Node{
-			"foo":     {Value: "bar"},
-			"timeout": {Value: "1s"},
+			"foo":     NewNode("bar"),
+			"timeout": NewNode("1s"),
 			"spam": {
 				Children: map[Key]*Node{
-					"eggs":  {Value: "ham"},
-					"salad": {Value: "none"},
+					"eggs":  NewNode("ham"),
+					"salad": NewNode("none"),
 				},
 			},
 			"slice": {
 				Children: map[Key]*Node{
-					"0": {Value: "a"},
-					"1": {Value: "b"},
-					"2": {Value: "c"},
+					"0": NewNode("a"),
+					"1": NewNode("b"),
+					"2": NewNode("c"),
 				},
 			},
 		},
@@ -82,11 +81,6 @@ func TestConvertToNode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	fmt.Println("Want")
-	want.Dump(0)
-	fmt.Println("Got")
-	got.Dump(0)
 
 	assert.That(t, got, is.DeepEqual(want))
 }

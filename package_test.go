@@ -15,7 +15,7 @@ func Example() {
 				"Timeout": 2 * time.Second,
 			},
 		}),
-		appconf.JSONFile("./testdata/config.json"),
+		appconf.JSONFile("./testdata/config.json", true),
 	)
 	if err != nil {
 		panic(err)
@@ -53,7 +53,7 @@ func ExampleAppConfig_Bind_struct() {
 		}
 	}
 
-	c, err := appconf.New(appconf.JSONFile("./testdata/config.json"))
+	c, err := appconf.New(appconf.JSONFile("./testdata/config.json", true))
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func ExampleAppConfig_Bind_struct() {
 }
 
 func ExampleAppConfig_Bind_map() {
-	c, err := appconf.New(appconf.JSONFile("./testdata/config.json"))
+	c, err := appconf.New(appconf.JSONFile("./testdata/config.json", true))
 	if err != nil {
 		panic(err)
 	}

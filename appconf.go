@@ -26,7 +26,7 @@ func (c *AppConfig) HasKey(key string) bool {
 func (c *AppConfig) Sub(key string) *AppConfig {
 	s, err := c.SubE(key)
 	if err != nil {
-		return &AppConfig{&Node{}}
+		return &AppConfig{NewNode("")}
 	}
 
 	return s
@@ -216,9 +216,7 @@ func (c *AppConfig) get(key string) (*Node, error) {
 
 func New(loaders ...Loader) (*AppConfig, error) {
 	c := &AppConfig{
-		n: &Node{
-			Children: make(map[Key]*Node),
-		},
+		n: NewNode(""),
 	}
 
 	for _, l := range loaders {

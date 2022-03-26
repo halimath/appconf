@@ -56,6 +56,13 @@ type Node struct {
 	Children map[Key]*Node
 }
 
+func NewNode(v string) *Node {
+	return &Node{
+		Value:    v,
+		Children: make(map[Key]*Node),
+	}
+}
+
 func (n *Node) resolve(path KeyPath) *Node {
 	if len(path) == 0 {
 		return n
@@ -227,9 +234,7 @@ func (n *Node) GetDurationE() (time.Duration, error) {
 }
 
 func ConvertToNode(m map[string]interface{}) (*Node, error) {
-	n := &Node{
-		Children: make(map[Key]*Node),
-	}
+	n := NewNode("")
 
 	for k, val := range m {
 		path := ParseKeyPath(k)
@@ -294,16 +299,14 @@ func createNodeFromValue(val interface{}) (*Node, error) {
 		reflect.Float32,
 		reflect.Float64,
 		reflect.String:
-		return &Node{Value: fmt.Sprint(val)}, nil
+		return NewNode(fmt.Sprint(val)), nil
 	default:
 		return nil, fmt.Errorf("%w: unsupported value type: %T", ErrUnsupportedValue, val)
 	}
 }
 
 func createNodeFromSlice(val []interface{}) (*Node, error) {
-	r := &Node{
-		Children: make(map[Key]*Node),
-	}
+	r := NewNode("")
 
 	for idx, v := range val {
 		n, err := createNodeFromValue(v)

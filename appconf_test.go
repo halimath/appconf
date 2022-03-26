@@ -12,18 +12,18 @@ var standardConfig = &Node{
 	Children: map[Key]*Node{
 		Key("web"): {
 			Children: map[Key]*Node{
-				Key("address"):   {Value: "localhost:8080"},
-				Key("timeout"):   {Value: "2s"},
-				Key("authorize"): {Value: "true"},
+				Key("address"):   NewNode("localhost:8080"),
+				Key("timeout"):   NewNode("2s"),
+				Key("authorize"): NewNode("true"),
 			},
 		},
 		Key("db"): {
 			Children: map[Key]*Node{
-				Key("type"):     {Value: "mysql"},
-				Key("host"):     {Value: "localhost"},
-				Key("port"):     {Value: "3306"},
-				Key("user"):     {Value: "test"},
-				Key("password"): {Value: "secret"},
+				Key("type"):     NewNode("mysql"),
+				Key("host"):     NewNode("localhost"),
+				Key("port"):     NewNode("3306"),
+				Key("user"):     NewNode("test"),
+				Key("password"): NewNode("secret"),
 			},
 		},
 
@@ -31,24 +31,24 @@ var standardConfig = &Node{
 			Children: map[Key]*Node{
 				"0": {
 					Children: map[Key]*Node{
-						Key("host"): {Value: "alpha"},
-						Key("port"): {Value: "8080"},
+						Key("host"): NewNode("alpha"),
+						Key("port"): NewNode("8080"),
 						Key("tags"): {
 							Children: map[Key]*Node{
-								Key("0"): {Value: "a"},
-								Key("1"): {Value: "1"},
+								Key("0"): NewNode("a"),
+								Key("1"): NewNode("1"),
 							},
 						},
 					},
 				},
 				"1": {
 					Children: map[Key]*Node{
-						Key("host"): {Value: "beta"},
-						Key("port"): {Value: "8081"},
+						Key("host"): NewNode("beta"),
+						Key("port"): NewNode("8081"),
 						Key("tags"): {
 							Children: map[Key]*Node{
-								Key("0"): {Value: "b"},
-								Key("1"): {Value: "2"},
+								Key("0"): NewNode("b"),
+								Key("1"): NewNode("2"),
 							},
 						},
 					},
