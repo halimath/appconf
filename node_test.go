@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-test/deep"
+	"github.com/halimath/assertthat-go/assert"
+	"github.com/halimath/assertthat-go/is"
 )
 
 func TestNodeOverwriteWith(t *testing.T) {
@@ -43,9 +44,7 @@ func TestNodeOverwriteWith(t *testing.T) {
 
 	n.OverwriteWith(o)
 
-	if diff := deep.Equal(want, n); diff != nil {
-		t.Error(diff)
-	}
+	assert.That(t, n, is.DeepEqual(want))
 }
 
 func TestConvertToNode(t *testing.T) {
@@ -89,7 +88,5 @@ func TestConvertToNode(t *testing.T) {
 	fmt.Println("Got")
 	got.Dump(0)
 
-	if diff := deep.Equal(want, got); diff != nil {
-		t.Error(diff)
-	}
+	assert.That(t, got, is.DeepEqual(want))
 }

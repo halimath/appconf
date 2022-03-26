@@ -111,7 +111,8 @@ func resolveReflectValue(n *Node, t reflect.Type, opts structFieldBindOpts) (ref
 		reflect.Uint64,
 		reflect.Complex64,
 		reflect.Complex128,
-		reflect.Float32:
+		reflect.Float32,
+		reflect.Float64:
 		s, err := resolveScalar(n, t.Kind())
 		if err != nil {
 			return reflect.Value{}, err
@@ -152,8 +153,9 @@ func resolveScalar(n *Node, rk reflect.Kind) (interface{}, error) {
 		return complex64(n.GetComplex128()), nil
 	case reflect.Complex128:
 		return n.GetComplex128(), nil
-	case reflect.Float32,
-		reflect.Float64:
+	case reflect.Float32:
+		return n.GetFloat32(), nil
+	case reflect.Float64:
 		return n.GetFloat64(), nil
 	default:
 		return nil, fmt.Errorf("%w: unsupported kind: %s", ErrNotAScalar, rk)

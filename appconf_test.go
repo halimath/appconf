@@ -3,6 +3,9 @@ package appconf
 import (
 	"testing"
 	"time"
+
+	"github.com/halimath/assertthat-go/assert"
+	"github.com/halimath/assertthat-go/is"
 )
 
 var standardConfig = &Node{
@@ -85,11 +88,11 @@ func TestAppConfig_Bind_nonNestedStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assertEqual(t, db{
+	assert.That(t, d, is.DeepEqual(db{
 		Engine: "mysql",
 		Host:   "localhost",
 		Port:   3306,
-	}, d)
+	}))
 }
 
 func TestAppConfig_Bind_nestedStruct(t *testing.T) {
@@ -102,7 +105,7 @@ func TestAppConfig_Bind_nestedStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assertEqual(t, config{
+	assert.That(t, cfg, is.DeepEqual(config{
 		DB: db{
 			Engine: "mysql",
 			Host:   "localhost",
@@ -113,14 +116,14 @@ func TestAppConfig_Bind_nestedStruct(t *testing.T) {
 			Timeout:   2 * time.Second,
 			Authorize: true,
 		},
-	}, cfg)
+	}))
 }
 
 func TestAppConfig_Sub(t *testing.T) {
 	c := &AppConfig{n: standardConfig}
 	s := c.Sub("web")
 
-	assertEqual(t, "localhost:8080", s.GetString("address"))
+	assert.That(t, s.GetString("address"), is.Equal("localhost:8080"))
 }
 
 func TestAppConfig_Get(t *testing.T) {
@@ -140,30 +143,30 @@ func TestAppConfig_Get(t *testing.T) {
 		n: n,
 	}
 
-	assertEqual(t, "foo", c.GetString("string"))
-	assertEqual(t, "", c.GetString("stringnotfound"))
+	assert.That(t, c.GetString("string"), is.Equal("foo"))
+	assert.That(t, c.GetString("stringnotfound"), is.Equal(""))
 
-	assertEqual(t, 67, c.GetInt("int"))
-	assertEqual(t, 0, c.GetInt("intnotfound"))
-	assertEqual(t, 67, c.GetInt64("int"))
-	assertEqual(t, 0, c.GetInt64("intnotfound"))
+	assert.That(t, c.GetInt("int"), is.Equal(67))
+	assert.That(t, c.GetInt("intnotfound"), is.Equal(0))
+	assert.That(t, c.GetInt64("int"), is.Equal[int64](67))
+	assert.That(t, c.GetInt64("intnotfound"), is.Equal[int64](0))
 
-	assertEqual(t, 67, c.GetUint("int"))
-	assertEqual(t, 0, c.GetUint("intnotfound"))
-	assertEqual(t, 67, c.GetUint64("int"))
-	assertEqual(t, 0, c.GetUint64("intnotfound"))
+	assert.That(t, c.GetUint("int"), is.Equal[uint](67))
+	assert.That(t, c.GetUint("intnotfound"), is.Equal[uint](0))
+	assert.That(t, c.GetUint64("int"), is.Equal[uint64](67))
+	assert.That(t, c.GetUint64("intnotfound"), is.Equal[uint64](0))
 
-	assertEqual(t, 17.2, c.GetFloat32("float"))
-	assertEqual(t, 0, c.GetFloat32("floatnotfound"))
-	assertEqual(t, 17.2, c.GetFloat64("float"))
-	assertEqual(t, 0, c.GetFloat64("floatnotfound"))
+	assert.That(t, c.GetFloat32("float"), is.Equal[float32](17.2))
+	assert.That(t, c.GetFloat32("floatnotfound"), is.Equal[float32](0))
+	assert.That(t, c.GetFloat64("float"), is.Equal(17.2))
+	assert.That(t, c.GetFloat64("floatnotfound"), is.Equal(0.0))
 
-	assertEqual(t, true, c.GetBool("bool"))
-	assertEqual(t, false, c.GetBool("boolnotfound"))
+	assert.That(t, c.GetBool("bool"), is.Equal(true))
+	assert.That(t, c.GetBool("boolnotfound"), is.Equal(false))
 
-	assertEqual(t, complex(1, 2), c.GetComplex128("complex"))
-	assertEqual(t, complex(0, 0), c.GetComplex128("boolnotfound"))
+	assert.That(t, c.GetComplex128("complex"), is.Equal(complex(1, 2)))
+	assert.That(t, c.GetComplex128("boolnotfound"), is.Equal(complex(0, 0)))
 
-	assertEqual(t, time.Second, c.GetDuration("duration"))
-	assertEqual(t, 0, c.GetDuration("durationnotfound"))
+	assert.That(t, c.GetDuration("duration"), is.Equal(time.Second))
+	assert.That(t, c.GetDuration("durationnotfound"), is.Equal[time.Duration](0))
 }

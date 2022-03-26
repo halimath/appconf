@@ -3,6 +3,9 @@ package appconf
 import (
 	"testing"
 	"time"
+
+	"github.com/halimath/assertthat-go/assert"
+	"github.com/halimath/assertthat-go/is"
 )
 
 func TestAppConfig_Bind_struct(t *testing.T) {
@@ -65,7 +68,7 @@ func TestAppConfig_Bind_struct(t *testing.T) {
 		},
 	}
 
-	assertEqual(t, want, config)
+	assert.That(t, config, is.DeepEqual(want))
 }
 
 func TestAppConfig_Bind_map(t *testing.T) {
@@ -103,21 +106,62 @@ func TestAppConfig_Bind_map(t *testing.T) {
 		},
 	}
 
-	assertEqual(t, want, config)
+	assert.That(t, config, is.DeepEqual(want))
 }
 
-// func ExampleAppConfig_Bind_map() {
-// 	c, err := appconf.New(appconf.JSONFile("./testdata/config.json"))
-// 	if err != nil {
-// 		panic(err)
-// 	}
+func TestAppConfig_Bind_scalars(t *testing.T) {
+	type C struct {
+		Int   int   `appconf:"v"`
+		Int8  int8  `appconf:"v"`
+		Int16 int16 `appconf:"v"`
+		Int32 int32 `appconf:"v"`
+		Int64 int64 `appconf:"v"`
 
-// 	var config map[string]interface{}
-// 	if err := c.Bind(&config); err != nil {
-// 		panic(err)
-// 	}
+		Uint   uint   `appconf:"v"`
+		Uint8  uint8  `appconf:"v"`
+		Uint16 uint16 `appconf:"v"`
+		Uint32 uint32 `appconf:"v"`
+		Uint64 uint64 `appconf:"v"`
 
-// 	fmt.Printf("%v\n", config)
+		Float32 float32 `appconf:"v"`
+		Float64 float64 `appconf:"v"`
 
-// 	// Output:
-// }
+		Complex64  complex64  `appconf:"v"`
+		Complex128 complex128 `appconf:"v"`
+	}
+
+	n, err := ConvertToNode(map[string]interface{}{
+		"v": "1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ac := &AppConfig{
+		n: n,
+	}
+
+	var c C
+	if err := ac.Bind(&c); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.That(t, c,
+		is.Equal(C{
+			Int:        1,
+			Int8:       1,
+			Int16:      1,
+			Int32:      1,
+			Int64:      1,
+			Uint:       1,
+			Uint8:      1,
+			Uint16:     1,
+			Uint32:     1,
+			Uint64:     1,
+			Float32:    1,
+			Float64:    1,
+			Complex64:  1,
+			Complex128: 1,
+		}),
+	)
+}
