@@ -11,10 +11,11 @@ import (
 func TestAppConfig_Bind_struct(t *testing.T) {
 	type (
 		DB struct {
-			Engine string `appconf:"type"`
-			Host   string
-			Port   int
-			User   string `appconf:",ignore"`
+			Engine      string `appconf:"type"`
+			Host        string
+			Port        int
+			User        string `appconf:",ignore"`
+			KeyNotFound string
 		}
 
 		Web struct {

@@ -67,7 +67,9 @@ func bindStruct(n *Node, rv reflect.Value) error {
 			return fmt.Errorf("%w: struct field %s: %s", ErrInvalidBindingType, f.Name, err)
 		}
 
-		rv.Elem().Field(i).Set(v)
+		if v != (reflect.Value{}) {
+			rv.Elem().Field(i).Set(v)
+		}
 	}
 
 	return nil
@@ -80,7 +82,7 @@ func resolveReflectValue(n *Node, t reflect.Type, opts structFieldBindOpts) (ref
 
 	n = n.resolve(keyPath)
 	if n == nil {
-		return reflect.Value{}, fmt.Errorf("%w: %s", ErrNoSuchKey, opts.key)
+		return reflect.Value{}, nil
 	}
 
 	if t == reflect.TypeOf(time.Second) {
