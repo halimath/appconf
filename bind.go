@@ -16,9 +16,12 @@ const (
 )
 
 var (
+	// ErrInvalidBindingType is returned from binding when a value's type is not supported for binding.
 	ErrInvalidBindingType = errors.New("invalid binding type")
 )
 
+// bind binds to v values loaded from n. This is the entry point for binding. v must be a pointer to a struct
+// value or map[string]interface{}.
 func bind(n *Node, v interface{}) error {
 	rv := reflect.ValueOf(v)
 
@@ -45,6 +48,7 @@ func bind(n *Node, v interface{}) error {
 	}
 }
 
+// bindStruct binds the struct fields of the value described by rv to config values read from n.
 func bindStruct(n *Node, rv reflect.Value) error {
 	rt := reflect.Indirect(rv).Type()
 
@@ -69,6 +73,8 @@ func bindStruct(n *Node, rv reflect.Value) error {
 	return nil
 }
 
+// resolveReflectValue resolves the config value described by opts and loaded from n. It is converted to a
+// reflect.Value with respect to t. t can be either a time.Duration, a struct, a slice or a primitive value.
 func resolveReflectValue(n *Node, t reflect.Type, opts structFieldBindOpts) (reflect.Value, error) {
 	keyPath := ParseKeyPath(opts.key)
 
